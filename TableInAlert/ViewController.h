@@ -9,5 +9,6 @@
 #import <UIKit/UIKit.h>
 
 @interface ViewController : UIViewController
-
+@property (assign, nonatomic) UIDeviceOrientation currentOrientation;
+@property (assign, nonatomic) UIDeviceOrientation previousOrientation;
 @end

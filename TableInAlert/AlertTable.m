@@ -7,6 +7,8 @@
 //
 
 #import "AlertTable.h"
+#import "ViewController.h"
+
 #define CONTAINER_WIDTH 260
 #define CONTAINER_HEIGHT 390
 #define INSIDE_CONTAINER_WIDTH 240
@@ -17,8 +19,15 @@
 #define INSIDE_LEFT_RIGHT 20
 static const CGFloat LEFT_SIDE_INSET = 45.0;
 static const CGFloat RIGHT_SIDE_INSET = -45.0;
-@implementation AlertTable
 
+@interface AlertTable()
+{
+    
+}
+@property(strong, nonatomic) ViewController *parentVC;
+@end
+
+@implementation AlertTable
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
@@ -28,16 +37,18 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
     return self;
 }
 
-- (id)initWithParentView:(UIView *)parentView
+- (id)initWithParentViewController:(ViewController *)parentController seletedBlock:(SeletedTable)tapped
 {
-    self = [super initWithFrame:parentView.frame];
+    self = [super initWithFrame:parentController.view.frame];
     if(self)
     {
-        self.currentOrientation = [UIDevice currentDevice].orientation;
-        _parentView = parentView;
-        self.frame = parentView.frame;
-        NSLog(@"width:%f",self.frame.size.width);
-        
+        self.parentVC = parentController;
+        self.tappedBlock = tapped;
+        //NSLog(@"cur:%d",parentController.currentOrientation);
+        _parentView = parentController.view;
+        self.frame = parentController.view.frame;
+        //NSLog(@"width:%f,%f",self.frame.size.width,self.frame.size.height);
+        [_parentVC addObserver:self forKeyPath:@"currentOrientation" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
     }
     return self;
 }
@@ -47,24 +58,40 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
     
 }
 
-- (void)detectOrientation:(NSNotification *)no
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
     if(self.containerView)
     {
-        NSLog(@"%d",[UIDevice currentDevice].orientation);
-        _containerView.frame = UIEdgeInsetsInsetRect(self.frame, UIEdgeInsetsMake(60, 40, 60, 40));
-        _insideContainerView.frame = UIEdgeInsetsInsetRect(_containerView.bounds, UIEdgeInsetsMake(40, 20, 40, 20));
-        _mainTable.frame = CGRectMake(0, 0, _insideContainerView.frame.size.width, _insideContainerView.frame.size.height);
-        _cancelButton.frame = CGRectMake(_insideContainerView.frame.origin.x, _insideContainerView.frame.size.height + 40, 65, 30);
-        _confirmButton.frame = CGRectMake(_insideContainerView.frame.origin.x+65+_containerView.frame.size.width - 130-_insideContainerView.frame.origin.x*2, _insideContainerView.frame.size.height+40, 65, 30);
+        UIDeviceOrientation ori = [[change objectForKey:@"new"] integerValue];
+        if (ori != UIDeviceOrientationPortraitUpsideDown)
+        {
+            //如果直接更改self.frame会出问题,所以加个变量来表示旋转后的rect
+            CGRect sourceFrame;
+            if(_parentVC.currentOrientation == UIDeviceOrientationPortrait)
+            {
+                sourceFrame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height);
+            }
+            else if(_parentVC.currentOrientation == UIDeviceOrientationLandscapeRight || _parentVC.currentOrientation == UIDeviceOrientationLandscapeLeft)
+            {
+                sourceFrame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.height, [UIScreen mainScreen].bounds.size.width);
+            }
+            _containerView.frame = UIEdgeInsetsInsetRect(sourceFrame, UIEdgeInsetsMake(60, 40, 60, 40));
+            //NSLog(@"self:%f,%f,%f,%f",self.frame.origin.x,self.frame.origin.y, self.frame.size.width,self.frame.size.height);
+            //self.backgroundColor = [UIColor redColor];
+            //NSLog(@"ct:%f,%f,%f.%f",_containerView.frame.origin.x,_containerView.frame.origin.y, _containerView.frame.size.width,_containerView.frame.size.height);
+            //NSLog(@"pr:%f,%f,%f,%f",_parentVC.view.frame.origin.x,_parentVC.view.frame.origin.y,_parentVC.view.frame.size.width,_parentVC.view.frame.size.height);
+            _insideContainerView.frame = UIEdgeInsetsInsetRect(_containerView.bounds, UIEdgeInsetsMake(40, 20, 40, 20));
+            _mainTable.frame = CGRectMake(0, 0, _insideContainerView.frame.size.width, _insideContainerView.frame.size.height);
+            _cancelButton.frame = CGRectMake(_insideContainerView.frame.origin.x, _insideContainerView.frame.size.height + 40, 65, 30);
+            _confirmButton.frame = CGRectMake(_insideContainerView.frame.origin.x+65+_containerView.frame.size.width - 130-_insideContainerView.frame.origin.x*2, _insideContainerView.frame.size.height+40, 65, 30);
+        }
     }
 }
 
 - (void)showWithTitle:(NSString *)title;
 {
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(detectOrientation:) name:@"UIDeviceOrientationDidChangeNotification" object:nil];
     
-    [self abandoned];
+    [self createContainerView];
     _titleLabel.text = title;
     _containerView.layer.opacity = 0.5f;
     _containerView.layer.transform = CATransform3DMakeScale(1.3f, 1.3f, 1.0);
@@ -88,7 +115,8 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
 
 - (void)dismiss
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    //remove observer
+    [_parentVC removeObserver:self forKeyPath:@"currentOrientation"];
     _containerView.layer.transform = CATransform3DMakeScale(1, 1, 1);
     _containerView.layer.opacity = 1.0f;
     
@@ -107,47 +135,10 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
      ];
 }
 
-
 - (void)createContainerView
 {
-    self.containerView = [[UIView alloc] init];
-    _containerView.layer.cornerRadius = 3.0f;
-    _containerView.translatesAutoresizingMaskIntoConstraints = NO;
-    [self addSubview:_containerView];
-    NSLayoutConstraint *leftCon = [NSLayoutConstraint constraintWithItem:self.containerView attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeLeft multiplier:1.0 constant:45];
-    NSLayoutConstraint *rightCon = [NSLayoutConstraint constraintWithItem:self.containerView attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationGreaterThanOrEqual toItem:self attribute:NSLayoutAttributeRight multiplier:1.0 constant:-45];
-    NSLayoutConstraint *topCon = [NSLayoutConstraint constraintWithItem:self.containerView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTop multiplier:1.0 constant:45];
-    NSLayoutConstraint *bottomCon = [NSLayoutConstraint constraintWithItem:self.containerView attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationGreaterThanOrEqual toItem:self attribute:NSLayoutAttributeBottom multiplier:1.0 constant:-45.0];
-    [self addConstraint:rightCon];
-    [self addConstraint:leftCon];
-    [self addConstraint:topCon];
-    [self addConstraint:bottomCon];
-    
-    self.insideContainerView = [[UIView alloc] init];
-    _insideContainerView.translatesAutoresizingMaskIntoConstraints = NO;
-    [_containerView addSubview:_insideContainerView];
-    leftCon = [NSLayoutConstraint constraintWithItem:_insideContainerView attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:_containerView attribute:NSLayoutAttributeLeft multiplier:1.0 constant:INSIDE_LEFT_RIGHT];
-    rightCon = [NSLayoutConstraint constraintWithItem:_insideContainerView attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:_containerView attribute:NSLayoutAttributeRight multiplier:1.0 constant:-INSIDE_LEFT_RIGHT];
-    topCon = [NSLayoutConstraint constraintWithItem:_insideContainerView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_containerView attribute:NSLayoutAttributeTop multiplier:1.0 constant:INSIDE_INSET_TOP_BOTTOM];
-    bottomCon = [NSLayoutConstraint constraintWithItem:_insideContainerView attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_containerView attribute:NSLayoutAttributeBottom multiplier:1.0 constant:-INSIDE_INSET_TOP_BOTTOM];
-    [_containerView addConstraint:leftCon];
-    [_containerView addConstraint:rightCon];
-    [_containerView addConstraint:topCon];
-    [_containerView addConstraint:bottomCon];
-    
-    _insideContainerView.layer.cornerRadius = 3.0;
-    _insideContainerView.layer.borderWidth = 1;
-    _insideContainerView.layer.borderColor = [UIColor lightGrayColor].CGColor;
-    
-    _mainTable = [[UITableView alloc] initWithFrame:_insideContainerView.frame style:UITableViewStylePlain];
-    _mainTable.delegate = self;
-    _mainTable.dataSource = self;
-    [_insideContainerView addSubview:_mainTable];
-}
-
-- (void)abandoned
-{
-    UIDeviceOrientation deviceOrientation = [[UIDevice currentDevice] orientation];
+    //根据当前屏幕的orientation来确定self的rect
+    UIDeviceOrientation deviceOrientation = _parentVC.currentOrientation;
     if(deviceOrientation == UIDeviceOrientationLandscapeLeft | deviceOrientation == UIDeviceOrientationLandscapeRight)
     {
         self.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.height, [UIScreen mainScreen].bounds.size.width);
@@ -158,7 +149,16 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
     }
     else
     {
-        self.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.height, [UIScreen mainScreen].bounds.size.width);
+        //记录之前的旋转状态,主要是为了防止在upsidedown的时候尺寸不对。如果从landscape旋转到upsidedown，这时弹出的frame应该还是landscape下得frame大小
+        if(_parentVC.previousOrientation == UIDeviceOrientationPortrait)
+        {
+            self.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height);
+        }
+        else if(_parentVC.previousOrientation == UIDeviceOrientationLandscapeLeft || _parentVC.previousOrientation == UIDeviceOrientationLandscapeRight)
+        {
+            //NSLog(@"yo");
+            self.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.height, [UIScreen mainScreen].bounds.size.width);
+        }
     }
     
     CGRect screenRect = self.frame;
@@ -166,6 +166,7 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
     self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _containerView = [[UIView alloc] init];
     _containerView.frame = UIEdgeInsetsInsetRect(self.frame, UIEdgeInsetsMake(60, 40, 60, 40));
+    //NSLog(@"%f,%f",self.frame.size.width,self.frame.size.height);
     _containerView.layer.cornerRadius = 5.0f;
 //    _containerView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _insideContainerView = [[UIView alloc] initWithFrame:UIEdgeInsetsInsetRect(_containerView.bounds, UIEdgeInsetsMake(40, 20, 40, 20))];
@@ -188,13 +189,12 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
     [_insideContainerView addSubview:_mainTable];
     _cancelButton = [UIButton buttonWithType:UIButtonTypeRoundedRect];
     _cancelButton.frame = CGRectMake(_insideContainerView.frame.origin.x, _insideContainerView.frame.size.height + 40, 65, 30);
-//    _cancelButton.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [_cancelButton setTitle:@"取消" forState:UIControlStateNormal];
     [_containerView addSubview:_cancelButton];
     [_cancelButton addTarget:self action:@selector(clickCancelButton) forControlEvents:UIControlEventTouchUpInside];
     _confirmButton = [UIButton buttonWithType:UIButtonTypeRoundedRect];
     [_confirmButton setTitle:@"确认" forState:UIControlStateNormal];
-//    _confirmButton.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+
     [_confirmButton addTarget:self action:@selector(clickConfirmButton) forControlEvents:UIControlEventTouchUpInside];
     _confirmButton.frame = CGRectMake(_insideContainerView.frame.origin.x+65+_containerView.frame.size.width - 130-_insideContainerView.frame.origin.x*2, _insideContainerView.frame.size.height+40, 65, 30);
     [_containerView addSubview:_confirmButton];
@@ -239,6 +239,11 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
     }
     cell.textLabel.text = [_dataSources objectAtIndex:indexPath.row];
     return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    _tappedBlock(indexPath.row);
 }
 
 /*

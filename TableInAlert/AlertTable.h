@@ -11,6 +11,9 @@
 - (void)cancelButtonClicked:(AlertTable *)alertTable;
 - (void)confirmButtonClicked:(AlertTable *)alertTable;
 @end
+
+typedef void(^SeletedTable)(NSInteger);
+
 #import <UIKit/UIKit.h>
 @interface AlertTable : UIView<UITableViewDataSource,UITableViewDelegate>
 {
@@ -25,8 +28,7 @@
 @property (strong, nonatomic) UIView *containerView;
 @property (strong, nonatomic) UIView *insideContainerView;
 @property (strong, nonatomic) UILabel *titleLabel;
-@property (assign, nonatomic) UIDeviceOrientation currentOrientation;
-@property (assign, nonatomic) UIDeviceOrientation previousOrientation;
-- (id)initWithParentView:(UIView *)parentView;
+@property (strong, nonatomic) SeletedTable tappedBlock;
+- (id)initWithParentViewController:(UIViewController *)parentController seletedBlock:(SeletedTable)tapped;
 - (void)showWithTitle:(NSString *)title;
 @end
