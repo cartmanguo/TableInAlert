@@ -14,11 +14,11 @@
 #define INSIDE_CONTAINER_WIDTH 240
 #define INSIDE_CONTAINER_HEIGHT 280
 #define INSET_TOP_BOTTOM 60
-#define INSET_LEFT_RIGHT 45
-#define INSIDE_INSET_TOP_BOTTOM 45
-#define INSIDE_LEFT_RIGHT 20
-static const CGFloat LEFT_SIDE_INSET = 45.0;
-static const CGFloat RIGHT_SIDE_INSET = -45.0;
+#define INSET_LEFT_RIGHT 40
+#define INSIDE_INSET_TOP_BOTTOM 40
+#define INSIDE_INSET_LEFT_RIGHT 20
+#define BUTTON_WIDTH 65
+#define BUTTON_HEIGHT 30
 
 @interface AlertTable()
 {
@@ -75,15 +75,15 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
             {
                 sourceFrame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.height, [UIScreen mainScreen].bounds.size.width);
             }
-            _containerView.frame = UIEdgeInsetsInsetRect(sourceFrame, UIEdgeInsetsMake(60, 40, 60, 40));
+            _containerView.frame = UIEdgeInsetsInsetRect(sourceFrame, UIEdgeInsetsMake(INSET_TOP_BOTTOM, INSET_LEFT_RIGHT, INSET_TOP_BOTTOM, INSET_LEFT_RIGHT));
             //NSLog(@"self:%f,%f,%f,%f",self.frame.origin.x,self.frame.origin.y, self.frame.size.width,self.frame.size.height);
             //self.backgroundColor = [UIColor redColor];
             //NSLog(@"ct:%f,%f,%f.%f",_containerView.frame.origin.x,_containerView.frame.origin.y, _containerView.frame.size.width,_containerView.frame.size.height);
             //NSLog(@"pr:%f,%f,%f,%f",_parentVC.view.frame.origin.x,_parentVC.view.frame.origin.y,_parentVC.view.frame.size.width,_parentVC.view.frame.size.height);
-            _insideContainerView.frame = UIEdgeInsetsInsetRect(_containerView.bounds, UIEdgeInsetsMake(40, 20, 40, 20));
+            _insideContainerView.frame = UIEdgeInsetsInsetRect(_containerView.bounds, UIEdgeInsetsMake(INSIDE_INSET_TOP_BOTTOM, INSIDE_INSET_LEFT_RIGHT, INSIDE_INSET_TOP_BOTTOM, INSIDE_INSET_LEFT_RIGHT));
             _mainTable.frame = CGRectMake(0, 0, _insideContainerView.frame.size.width, _insideContainerView.frame.size.height);
-            _cancelButton.frame = CGRectMake(_insideContainerView.frame.origin.x, _insideContainerView.frame.size.height + 40, 65, 30);
-            _confirmButton.frame = CGRectMake(_insideContainerView.frame.origin.x+65+_containerView.frame.size.width - 130-_insideContainerView.frame.origin.x*2, _insideContainerView.frame.size.height+40, 65, 30);
+            _cancelButton.frame = CGRectMake(_insideContainerView.frame.origin.x, _insideContainerView.frame.size.height + INSET_LEFT_RIGHT, BUTTON_WIDTH, BUTTON_HEIGHT);
+            _confirmButton.frame = CGRectMake(_insideContainerView.frame.origin.x+BUTTON_WIDTH+_containerView.frame.size.width - BUTTON_WIDTH * 2 - _insideContainerView.frame.origin.x*2, _insideContainerView.frame.size.height+INSET_LEFT_RIGHT, BUTTON_WIDTH, BUTTON_HEIGHT);
         }
     }
 }
@@ -165,11 +165,11 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
     self.frame = CGRectMake(0, 0, screenRect.size.width, screenRect.size.height);
     self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _containerView = [[UIView alloc] init];
-    _containerView.frame = UIEdgeInsetsInsetRect(self.frame, UIEdgeInsetsMake(60, 40, 60, 40));
+    _containerView.frame = UIEdgeInsetsInsetRect(self.frame, UIEdgeInsetsMake(INSET_TOP_BOTTOM, INSET_LEFT_RIGHT, INSET_TOP_BOTTOM, INSET_LEFT_RIGHT));
     //NSLog(@"%f,%f",self.frame.size.width,self.frame.size.height);
     _containerView.layer.cornerRadius = 5.0f;
 //    _containerView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    _insideContainerView = [[UIView alloc] initWithFrame:UIEdgeInsetsInsetRect(_containerView.bounds, UIEdgeInsetsMake(40, 20, 40, 20))];
+    _insideContainerView = [[UIView alloc] initWithFrame:UIEdgeInsetsInsetRect(_containerView.bounds, UIEdgeInsetsMake(INSIDE_INSET_TOP_BOTTOM, INSIDE_INSET_LEFT_RIGHT, INSIDE_INSET_TOP_BOTTOM, INSIDE_INSET_LEFT_RIGHT))];
 //    _insideContainerView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _insideContainerView.layer.cornerRadius = 3.0f;
     _insideContainerView.layer.borderWidth = 1.0f;
@@ -188,7 +188,7 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
     _mainTable.dataSource = self;
     [_insideContainerView addSubview:_mainTable];
     _cancelButton = [UIButton buttonWithType:UIButtonTypeRoundedRect];
-    _cancelButton.frame = CGRectMake(_insideContainerView.frame.origin.x, _insideContainerView.frame.size.height + 40, 65, 30);
+    _cancelButton.frame = CGRectMake(_insideContainerView.frame.origin.x, _insideContainerView.frame.size.height + INSET_LEFT_RIGHT, BUTTON_WIDTH, BUTTON_HEIGHT);
     [_cancelButton setTitle:@"取消" forState:UIControlStateNormal];
     [_containerView addSubview:_cancelButton];
     [_cancelButton addTarget:self action:@selector(clickCancelButton) forControlEvents:UIControlEventTouchUpInside];
@@ -196,7 +196,7 @@ static const CGFloat RIGHT_SIDE_INSET = -45.0;
     [_confirmButton setTitle:@"确认" forState:UIControlStateNormal];
 
     [_confirmButton addTarget:self action:@selector(clickConfirmButton) forControlEvents:UIControlEventTouchUpInside];
-    _confirmButton.frame = CGRectMake(_insideContainerView.frame.origin.x+65+_containerView.frame.size.width - 130-_insideContainerView.frame.origin.x*2, _insideContainerView.frame.size.height+40, 65, 30);
+    _confirmButton.frame = CGRectMake(_insideContainerView.frame.origin.x+BUTTON_WIDTH+_containerView.frame.size.width - BUTTON_WIDTH * 2 -_insideContainerView.frame.origin.x*2, _insideContainerView.frame.size.height+INSET_LEFT_RIGHT, BUTTON_WIDTH, BUTTON_HEIGHT);
     [_containerView addSubview:_confirmButton];
 
 }
